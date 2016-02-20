@@ -1,0 +1,43 @@
+#!/usr/bin/env python2.7
+from __future__ import print_function
+import argparse
+import sys
+import playkit.play as play
+import playkit.vault as vault
+import playkit.hook as hook
+from playkit.utils import error
+
+
+class PlayKit(object):
+    def __init__(self):
+        parser = argparse.ArgumentParser(
+                description='PlayKit - Ansible deploy without bullshit',
+                usage='''ansible-playkit <command> [<args>]
+Commands are:
+   play     Run deploy
+   vault    Manage ansible-vault files (encrypt/decrypt)
+   hook     Install or uninstall git pre-commit hook to verify that all files encrypted
+        ''')
+        parser.add_argument('command', help='Subcommand to run')
+        args = parser.parse_args(sys.argv[1:2])
+        if not hasattr(self, args.command):
+            parser.print_help()
+            error('Unrecognized command')
+        getattr(self, args.command)()
+
+    def play(self):
+        play.run(sys.argv[2:])
+
+    def vault(self):
+        vault.run(sys.argv[2:])
+
+    def hook(self):
+        hook.run(sys.argv[2:])
+
+
+def main():
+    PlayKit()
+
+
+if __name__ == "__main__":
+    main()
