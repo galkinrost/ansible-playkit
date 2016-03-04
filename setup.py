@@ -19,7 +19,7 @@ setup(name='ansible-playkit',
       package_dir={ '': 'lib' },
       packages=find_packages('lib'),
       package_data={
-          '': ['Dockerfile'],
+          '': ['Dockerfile', 'project_template/**/*'],
       },
       classifiers=[
           'Development Status :: 4 - Beta',

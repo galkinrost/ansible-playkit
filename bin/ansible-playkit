@@ -5,6 +5,7 @@ import sys
 import playkit.play as play
 import playkit.vault as vault
 import playkit.hook as hook
+import playkit.project as project
 from playkit.utils import error
 
 
@@ -17,6 +18,7 @@ Commands are:
    play     Run deploy
    vault    Manage ansible-vault files (encrypt/decrypt)
    hook     Install or uninstall git pre-commit hook to verify that all files encrypted
+   project  Manage ansible-playkit project
         ''')
         parser.add_argument('command', help='Subcommand to run')
         args = parser.parse_args(sys.argv[1:2])
@@ -33,6 +35,9 @@ Commands are:
 
     def hook(self):
         hook.run(sys.argv[2:])
+
+    def project(self):
+        project.run(sys.argv[2:])
 
 
 def main():
