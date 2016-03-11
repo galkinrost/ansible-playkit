@@ -3,62 +3,79 @@ import argparse
 import sys
 import os
 import re
-import docker
-import subprocess
 import utils
-import crypt
+
+from ansible.cli.vault import VaultCLI
 
 
 ENCRYPTED_TAG = '^\$ANSIBLE_VAULT'
 DECRYPTED_TAG = '^#.*vault: true'
 EXCLUDE_DIRECTORIES = ['.git']
+VAULT_PASSWORD_FILENAME = 'vault_password'
 
 
 def match(pattern, string):
     return re.match(pattern, string) is not None
 
 
-def find_matching_files(pattern):
-    current_directory = os.getcwd()
-    for root, directories, filenames in os.walk(current_directory):
+def find_matching_files(pattern, directory=os.getcwd()):
+    for root, directories, filenames in os.walk(directory):
         directories[:] = [d for d in directories if d not in EXCLUDE_DIRECTORIES]
         for filename in filenames:
             filepath = os.path.join(root, filename)
-            with open(filepath, 'r') as f:
-                if match(pattern, f.readline()):
-                    rel_dir = os.path.relpath(root, current_directory)
-                    rel_file = os.path.join(rel_dir, filename)
-                    yield rel_file
+            if pattern is None:
+                rel_dir = os.path.relpath(root, directory)
+                rel_file = os.path   .join(rel_dir, filename)
+                yield rel_file
+            else:
+                with open(filepath, 'r') as f:
+                    if match(pattern, f.readline()):
+                        rel_dir = os.path.relpath(root, directory)
+                        rel_file = os.path.join(rel_dir, filename)
+                        yield rel_file
     return
 
 
 def run_ansible_vault(command, files):
-    cmd = docker.get_docker_container_cmd() + ['ansible-vault', command] + files
-    r = subprocess.call(cmd)
-    if r > 0:
-        sys.exit(r)
+    args = ['ansible-vault', command, '--vault-password-file={}'.format(VAULT_PASSWORD_FILENAME,)] + files
+    cli = VaultCLI(args)
+    cli.parse()
+    sys.exit(cli.run())
 
 
-def run_encrypt_key(args):
-    parser = argparse.ArgumentParser(prog='ansible-playkit vault encryptkey', description='encrypt ssh key')
-    parser.add_argument('FILE', help='path to ssh key file')
-    parser.add_argument('--password', dest='password', help='key password to encrypt', required=False)
-    args = parser.parse_args(args)
-    if not os.path.exists(args.FILE):
-        utils.error('File not found')
-    crypt.encrypt_key(args.FILE, args.password)
+def get_keys_dir():
+    return os.path.join(os.getcwd(), 'keys')
+
+
+def get_keys(pattern):
+    keys_dir = get_keys_dir()
+    pattern_keys = set([filename for filename in
+                          find_matching_files(pattern, directory=keys_dir) if filename.endswith('.pem')])
+    all_keys = set([filename for filename in
+                          find_matching_files(None, directory=keys_dir) if filename.endswith('.pem')])
+    return [os.path.join(keys_dir, f) for f in all_keys.difference(pattern_keys)]
+
+
+def get_unencrypted_keys():
+    return get_keys(ENCRYPTED_TAG)
 
 
 def verify():
+    # verify that all ansible files are encrypted
     for filename in find_matching_files(DECRYPTED_TAG):
         utils.error('Found decrypted file', "'" + filename + "'.", "Run 'ansible-playkit vault encrypt' before commit")
+    # verify that all keys are encrypted
+    unencrypted_keys = [os.path.basename(f) for f in get_unencrypted_keys()]
+    if len(unencrypted_keys) > 0:
+        utils.error("Found unencrypted keys: ", ', '.join(unencrypted_keys))
+
     utils.ok('All files encrypted. Ok.')
     sys.exit(0)
 
 
 def run(args_list):
     parser = argparse.ArgumentParser(prog='ansible-playkit vault', description='vault')
-    parser.add_argument('command', help='Command to execute (encrypt/decrypt/encryptkey/verify)')
+    parser.add_argument('command', help='Command to execute (encrypt/decrypt/verify)')
     args = parser.parse_args(args_list[:1])
 
     if args.command not in ['encrypt', 'decrypt', 'encryptkey', 'verify']:
@@ -66,15 +83,11 @@ def run(args_list):
         utils.error('Unrecognized command')
 
     if args.command in ['encrypt', 'decrypt']:
-        docker.build_docker_image()
         files = []
         if args.command == 'encrypt':
-            files = [fn for fn in find_matching_files(DECRYPTED_TAG)]
+            files = [fn for fn in find_matching_files(DECRYPTED_TAG)] + get_unencrypted_keys()
         elif args.command == 'decrypt':
             files = [fn for fn in find_matching_files(ENCRYPTED_TAG)]
         run_ansible_vault(args.command, files)
-    elif args.command == 'encryptkey':
-        docker.build_docker_image()
-        run_encrypt_key(args_list[1:])
     elif args.command == 'verify':
         verify()

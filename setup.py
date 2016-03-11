@@ -9,17 +9,21 @@ except ImportError:
     sys.exit(1)
 
 setup(name='ansible-playkit',
-      version='1.0.0',
-      description='Ansible deploy without bullshit. Thin wrapper around Docker to run ansible and openssl.',
+      version='1.1.0',
+      description='Ansible deploy without bullshit',
       author='Oleg Poyaganov',
       author_email='oleg@poyaganov.com',
       url='https://github.com/opedge/ansible-playkit',
       license='MIT',
-      install_requires=['setuptools'],
+      install_requires=[
+          'setuptools',
+          'keyring',
+          'ansible>=2'
+      ],
       package_dir={ '': 'lib' },
       packages=find_packages('lib'),
       package_data={
-          '': ['Dockerfile', 'project_template/**/*'],
+          '': ['project_template/**/*', 'project_template/vault_password'],
       },
       classifiers=[
           'Development Status :: 4 - Beta',

@@ -1,16 +1,13 @@
 from __future__ import print_function
 import argparse
 import utils
-import sys
 import os
 import shutil
+import getpass
+import keyring
 
 
-def user_input(question):
-     if (sys.version_info > (3, 0)):
-         return input(question)
-     else:
-         return raw_input(question)
+ANSIBLE_PLAYKIT_VAULT_SERVICE_NAME = 'ansible-playkit-vault'
 
 
 def create_project(path):
@@ -18,14 +15,22 @@ def create_project(path):
     shutil.copytree(template_path, path)
 
 
+def set_vault_password(project_name, password):
+    keyring.set_password(ANSIBLE_PLAYKIT_VAULT_SERVICE_NAME, project_name, password)
+
+
 def interactive_create_project():
-    name = user_input('Project name: ').strip()
+    name = utils.user_input('Project name: ').strip()
     if len(name) == 0:
         utils.error('Project name is required')
     path = os.path.join(os.getcwd(), name)
     if os.path.exists(path):
         utils.error('Path already exists')
     create_project(name)
+    password = getpass.getpass('Vault password: ')
+    if len(password) == 0:
+        utils.error('Vault password is required')
+    set_vault_password(name, password)
 
 
 def run(args_list):

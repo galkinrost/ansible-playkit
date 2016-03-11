@@ -1,33 +1,16 @@
 from __future__ import print_function
-import subprocess
 import argparse
 import os
 import sys
 import fnmatch
-import docker
-import crypt
 import utils
+import vault
+
+from ansible.cli.playbook import PlaybookCLI
+from ansible.cli.galaxy import GalaxyCLI
 
 INVENTORIES_PATH='inventories'
 KEYS_PATH = 'keys'
-VAULT_PASS_FILENAME = '.vault_password'
-
-
-def clean_keys():
-    keys = find_all('*.pem', KEYS_PATH)
-    for key in keys:
-        os.remove(key)
-
-
-def clean_vault_pass():
-    vault_pass = find_first(VAULT_PASS_FILENAME, os.getcwd())
-    if vault_pass is not None:
-        os.remove(vault_pass)
-
-
-def clean():
-    clean_keys()
-    clean_vault_pass()
 
 
 def find_first(pattern, path):
@@ -47,37 +30,31 @@ def find_all(pattern, path):
     return result
 
 
-def __run_playbook(docker_cmd, inventory_path, playbook_path, vault_password, key_path, tags, ansibleopts):
-    cmd = docker_cmd + ['ansible-playbook', '-i', inventory_path, '--private-key', key_path]
-    if vault_password is not None:
-        with open(VAULT_PASS_FILENAME, 'w') as f:
-            f.write(vault_password)
-        cmd += ['--vault-password-file', VAULT_PASS_FILENAME]
-    else:
-        cmd += ['--ask-vault-pass']
-    cmd += [playbook_path]
+def __run_playbook(inventory_path, playbook_path, key_path, tags, ansibleopts):
+    cmd = ['ansible-playbook', '-i', inventory_path, '--private-key', key_path,
+           '--vault-password-file={}'.format(vault.VAULT_PASSWORD_FILENAME), playbook_path]
     if len(tags) > 0:
         cmd += ['--tags', ','.join(tags)]
     if ansibleopts is not None:
         cmd += ansibleopts.strip().split()
-    r = subprocess.call(cmd)
-    if r > 0:
-        sys.exit(r)
+    cli = PlaybookCLI(cmd)
+    cli.parse()
+    sys.exit(cli.run())
 
 
-def run_playbook(docker_cmd, inventory_path, playbook_path, vault_password, key_path, tags, ansibleopts):
+def run_playbook(inventory_path, playbook_path, key_path, tags, ansibleopts):
     if os.path.exists(playbook_path):
         utils.ok('Running playbook', playbook_path)
-        __run_playbook(docker_cmd, inventory_path, playbook_path, vault_password, key_path, tags, ansibleopts)
+        __run_playbook(inventory_path, playbook_path, key_path, tags, ansibleopts)
     else:
         utils.error('Playbook not found', os.path.basename(playbook_path))
 
 
-def install_ansible_requirements(docker_cmd):
-    cmd = docker_cmd + ['ansible-galaxy', 'install', '-r', 'ansible-requirements.yml']
-    r = subprocess.call(cmd)
-    if r > 0:
-        sys.exit(r)
+def install_ansible_requirements():
+    cmd = ['ansible-galaxy', 'install', '-r', 'ansible-requirements.yml']
+    cli = GalaxyCLI(cmd)
+    cli.parse()
+    sys.exit(cli.run())
 
 
 def run(args):
@@ -85,8 +62,6 @@ def run(args):
     parser.add_argument('inventory', help='inventory name')
     parser.add_argument('playbook', help='playbook name')
     parser.add_argument('tags', nargs='*', help='Playbook tags which should be used')
-    parser.add_argument('--ssh_key_password', dest='ssh_key_password', required=False, help='SSH key password')
-    parser.add_argument('--vault_password', dest='vault_password', required=False, help='Ansible Vault password')
     parser.add_argument('--ansible_opts', dest='ansible_opts', required=False, help='Additional Ansible Playbook options')
     args = parser.parse_args(args)
 
@@ -104,17 +79,14 @@ def run(args):
 
     playbook_filename = args.playbook + '.yml'
     try:
-        docker.build_docker_image()
-        docker_cmd = docker.get_docker_container_cmd()
-        install_ansible_requirements(docker_cmd)
-        ssh_key = crypt.decrypt_key(key_path, args.ssh_key_password)
-        run_playbook(docker_cmd,
-                     inventory_path,
+        install_ansible_requirements()
+        vault.run_ansible_vault('decrypt', [key_path])
+        run_playbook(inventory_path,
                      playbook_filename,
-                     args.vault_password,
-                     ssh_key,
+                     key_path,
                      args.tags,
                      args.ansible_opts)
     finally:
-        clean()
+        vault.run_ansible_vault('encrypt', [key_path])
+
 
