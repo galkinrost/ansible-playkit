@@ -39,13 +39,13 @@ def __run_playbook(inventory_path, playbook_path, key_path, tags, ansibleopts):
         cmd += ansibleopts.strip().split()
     cli = PlaybookCLI(cmd)
     cli.parse()
-    sys.exit(cli.run())
+    return cli.run()
 
 
 def run_playbook(inventory_path, playbook_path, key_path, tags, ansibleopts):
     if os.path.exists(playbook_path):
         utils.ok('Running playbook', playbook_path)
-        __run_playbook(inventory_path, playbook_path, key_path, tags, ansibleopts)
+        return __run_playbook(inventory_path, playbook_path, key_path, tags, ansibleopts)
     else:
         utils.error('Playbook not found', os.path.basename(playbook_path))
 
@@ -53,8 +53,9 @@ def run_playbook(inventory_path, playbook_path, key_path, tags, ansibleopts):
 def install_ansible_requirements():
     cmd = ['ansible-galaxy', 'install', '-r', 'ansible-requirements.yml']
     cli = GalaxyCLI(cmd)
+    sys.argv = cmd
     cli.parse()
-    sys.exit(cli.run())
+    return cli.run()
 
 
 def run(args):
@@ -71,22 +72,27 @@ def run(args):
     else:
         utils.error('Inventory not found', inventory_path)
 
-    key_path = os.path.join(KEYS_PATH, '{}.pem.encrypted'.format(args.inventory))
+    key_path = os.path.join(KEYS_PATH, '{}.pem'.format(args.inventory))
     if os.path.exists(key_path):
         utils.ok('Using encrypted key', key_path)
     else:
         utils.error('Encrypted key not found', key_path)
 
     playbook_filename = args.playbook + '.yml'
+
+    r = 0
     try:
         install_ansible_requirements()
         vault.run_ansible_vault('decrypt', [key_path])
-        run_playbook(inventory_path,
-                     playbook_filename,
-                     key_path,
-                     args.tags,
-                     args.ansible_opts)
+        r = run_playbook(inventory_path,
+                         playbook_filename,
+                         key_path,
+                         args.tags,
+                         args.ansible_opts)
+    except Exception as e:
+        utils.error(e.message)
     finally:
         vault.run_ansible_vault('encrypt', [key_path])
+    sys.exit(r)
 
 

@@ -33,13 +33,23 @@ def interactive_create_project():
     set_vault_password(name, password)
 
 
+def passwd():
+    project_name = os.path.basename(os.getcwd())
+    password = getpass.getpass('New Vault password for {}: '.format(project_name,))
+    if len(password) == 0:
+        utils.error('Vault password is required')
+    set_vault_password(project_name, password)
+
+
 def run(args_list):
     parser = argparse.ArgumentParser(prog='ansible-playkit project', description='project management')
-    parser.add_argument('command', help='Command to execute (create)')
+    parser.add_argument('command', help='Command to execute (create/passwd)')
     args = parser.parse_args(args_list)
 
     if args.command == 'create':
         interactive_create_project()
+    elif args.command == 'passwd':
+        passwd()
     else:
         parser.print_help()
         utils.error('Unrecognized command')

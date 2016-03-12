@@ -40,7 +40,7 @@ def run_ansible_vault(command, files):
     args = ['ansible-vault', command, '--vault-password-file={}'.format(VAULT_PASSWORD_FILENAME,)] + files
     cli = VaultCLI(args)
     cli.parse()
-    sys.exit(cli.run())
+    return cli.run()
 
 
 def get_keys_dir():
@@ -88,6 +88,7 @@ def run(args_list):
             files = [fn for fn in find_matching_files(DECRYPTED_TAG)] + get_unencrypted_keys()
         elif args.command == 'decrypt':
             files = [fn for fn in find_matching_files(ENCRYPTED_TAG)]
-        run_ansible_vault(args.command, files)
+        if run_ansible_vault(args.command, files) != 0:
+            sys.exit(1)
     elif args.command == 'verify':
         verify()
