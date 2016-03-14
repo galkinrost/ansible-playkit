@@ -18,6 +18,11 @@ def match(pattern, string):
     return re.match(pattern, string) is not None
 
 
+def file_matches(filepath, pattern):
+    with open(filepath, 'r') as f:
+        return match(pattern, f.readline())
+
+
 def find_matching_files(pattern, directory=os.getcwd()):
     for root, directories, filenames in os.walk(directory):
         directories[:] = [d for d in directories if d not in EXCLUDE_DIRECTORIES]
@@ -27,12 +32,10 @@ def find_matching_files(pattern, directory=os.getcwd()):
                 rel_dir = os.path.relpath(root, directory)
                 rel_file = os.path   .join(rel_dir, filename)
                 yield rel_file
-            else:
-                with open(filepath, 'r') as f:
-                    if match(pattern, f.readline()):
-                        rel_dir = os.path.relpath(root, directory)
-                        rel_file = os.path.join(rel_dir, filename)
-                        yield rel_file
+            elif file_matches(filepath, pattern):
+                rel_dir = os.path.relpath(root, directory)
+                rel_file = os.path.join(rel_dir, filename)
+                yield rel_file
     return
 
 

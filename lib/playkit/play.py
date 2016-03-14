@@ -2,6 +2,7 @@ from __future__ import print_function
 import argparse
 import os
 import sys
+import shutil
 import fnmatch
 import utils
 import vault
@@ -81,8 +82,10 @@ def run(args):
     playbook_filename = args.playbook + '.yml'
 
     r = 0
+    key_path_copy = key_path + '.copy'
     try:
         install_ansible_requirements()
+        shutil.copyfile(key_path, key_path_copy)
         vault.run_ansible_vault('decrypt', [key_path])
         r = run_playbook(inventory_path,
                          playbook_filename,
@@ -92,7 +95,8 @@ def run(args):
     except Exception as e:
         utils.error(e.message)
     finally:
-        vault.run_ansible_vault('encrypt', [key_path])
+        if not vault.file_matches(key_path, vault.ENCRYPTED_TAG) and os.path.exists(key_path_copy):
+            shutil.move(key_path_copy, key_path)
     sys.exit(r)
 
 
