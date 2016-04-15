@@ -10,5 +10,7 @@ RUN cd /opt/src && \
 
 VOLUME ["/work"]
 
+WORKDIR /work
+
 ENTRYPOINT ["ansible-playkit"]
 CMD ["play"]
