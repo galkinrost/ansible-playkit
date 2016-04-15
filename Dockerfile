@@ -13,4 +13,3 @@ VOLUME ["/work"]
 WORKDIR /work
 
 ENTRYPOINT ["ansible-playkit"]
-CMD ["play"]
