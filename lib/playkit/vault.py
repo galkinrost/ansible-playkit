@@ -12,6 +12,7 @@ ENCRYPTED_TAG = '^\$ANSIBLE_VAULT'
 DECRYPTED_TAG = '^#.*vault: true'
 EXCLUDE_DIRECTORIES = ['.git']
 VAULT_PASSWORD_FILENAME = 'vault_password'
+VAULT_PLAIN_PASSWORD_FILENAME = '.vault_plain_password'
 
 
 def match(pattern, string):
@@ -40,7 +41,10 @@ def find_matching_files(pattern, directory=os.getcwd()):
 
 
 def run_ansible_vault(command, files):
-    args = ['ansible-vault', command, '--vault-password-file={}'.format(VAULT_PASSWORD_FILENAME,)] + files
+    vault_password_file = VAULT_PASSWORD_FILENAME
+    if os.path.exists(VAULT_PLAIN_PASSWORD_FILENAME):
+        vault_password_file = VAULT_PLAIN_PASSWORD_FILENAME
+    args = ['ansible-vault', command, '--vault-password-file={}'.format(vault_password_file,)] + files
     cli = VaultCLI(args)
     cli.parse()
     return cli.run()

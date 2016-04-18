@@ -32,8 +32,11 @@ def find_all(pattern, path):
 
 
 def __run_playbook(inventory_path, playbook_path, key_path, tags, ansibleopts):
+    vault_password_file = vault.VAULT_PASSWORD_FILENAME
+    if os.path.exists(vault.VAULT_PLAIN_PASSWORD_FILENAME):
+        vault_password_file = vault.VAULT_PLAIN_PASSWORD_FILENAME
     cmd = ['ansible-playbook', '-i', inventory_path, '--private-key', key_path,
-           '--vault-password-file={}'.format(vault.VAULT_PASSWORD_FILENAME), playbook_path]
+           '--vault-password-file={}'.format(vault_password_file), playbook_path]
     if len(tags) > 0:
         cmd += ['--tags', ','.join(tags)]
     if ansibleopts is not None:
@@ -59,12 +62,18 @@ def install_ansible_requirements():
     return cli.run()
 
 
+def save_plain_vault_password(password):
+    with open(vault.VAULT_PLAIN_PASSWORD_FILENAME, 'w+') as f:
+        f.write(password)
+
+
 def run(args):
     parser = argparse.ArgumentParser(prog='ansible-playkit play', description='deploy')
     parser.add_argument('inventory', help='inventory name')
     parser.add_argument('playbook', help='playbook name')
     parser.add_argument('tags', nargs='*', help='Playbook tags which should be used')
-    parser.add_argument('--ansible_opts', dest='ansible_opts', required=False, help='Additional Ansible Playbook options')
+    parser.add_argument('--vault-password', dest='vault_password', required=False, help='Ansible Vault password')
+    parser.add_argument('--ansible-opts', dest='ansible_opts', required=False, help='Additional Ansible Playbook options')
     args = parser.parse_args(args)
 
     inventory_path = os.path.join(INVENTORIES_PATH, args.inventory)
@@ -84,6 +93,8 @@ def run(args):
     r = 0
     key_path_copy = key_path + '.copy'
     try:
+        if args.vault_password is not None:
+            save_plain_vault_password(args.vault_password)
         install_ansible_requirements()
         shutil.copyfile(key_path, key_path_copy)
         vault.run_ansible_vault('decrypt', [key_path])
@@ -95,6 +106,10 @@ def run(args):
     except Exception as e:
         utils.error(e.message)
     finally:
+        try:
+            os.remove(vault.VAULT_PLAIN_PASSWORD_FILENAME)
+        except OSError:
+            pass
         if not vault.file_matches(key_path, vault.ENCRYPTED_TAG) and os.path.exists(key_path_copy):
             shutil.move(key_path_copy, key_path)
     sys.exit(r)
