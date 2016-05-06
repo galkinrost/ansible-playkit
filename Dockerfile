@@ -17,7 +17,7 @@ RUN cd /opt/src && \
     mkdir /etc/ansible/ && \
     echo '[local]\nlocalhost\n' > /etc/ansible/hosts && \
     mkdir /opt/ansible/ && \
-    git clone --branch v2.0.2.0-0.4.rc4 --depth 1 https://github.com/ansible/ansible.git /opt/ansible/ansible && \
+    git clone --branch v2.1.0.0-0.1.rc1 --depth 1 https://github.com/ansible/ansible.git /opt/ansible/ansible && \
     cd /opt/ansible/ansible && \
     git submodule update --init --recursive && \
     make && make install && \
