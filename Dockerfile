@@ -2,7 +2,7 @@ FROM ubuntu:14.04
 MAINTAINER Oleg Poyaganov <oleg@poyaganov.com>
 
 RUN apt-get -y update && \
-    apt-get install -y libffi-dev python-dev python-yaml python-jinja2 python-httplib2 python-keyczar python-paramiko python-setuptools python-pkg-resources git python-pip && \
+    apt-get install -y libssl-dev libffi-dev python-dev python-yaml python-jinja2 python-httplib2 python-keyczar python-paramiko python-setuptools python-pkg-resources git python-pip && \
     apt-get clean autoclean && \
     apt-get autoremove -y && \
     rm -rf /var/lib/{apt,dpkg,cache,log}/
