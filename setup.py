@@ -16,6 +16,7 @@ setup(name='ansible-playkit',
       url='https://github.com/opedge/ansible-playkit',
       license='MIT',
       install_requires=[
+          'cryptography',
           'setuptools',
           'keyring',
           'ansible>=2'
