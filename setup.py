@@ -19,7 +19,8 @@ setup(name='ansible-playkit',
           'cryptography',
           'setuptools>=11.3',
           'keyring',
-          'ansible>=2'
+          'ansible>=2',
+          'docker-py>=1.7.0'
       ],
       package_dir={ '': 'lib' },
       packages=find_packages('lib'),
