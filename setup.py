@@ -17,9 +17,9 @@ setup(name='ansible-playkit',
       license='MIT',
       install_requires=[
           'cryptography',
-          'setuptools',
+          'setuptools>=11.3',
           'keyring',
-          'ansible==2.0.0'
+          'ansible>=2'
       ],
       package_dir={ '': 'lib' },
       packages=find_packages('lib'),
