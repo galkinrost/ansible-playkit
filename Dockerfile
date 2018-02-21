@@ -1,8 +1,8 @@
 FROM ubuntu:14.04
-MAINTAINER Oleg Poyaganov <oleg@poyaganov.com>
+MAINTAINER Rostislav Galkin <galkinrost@gmail.com>
 
 RUN apt-get -y update && \
-    apt-get install -y libssl-dev libffi-dev python-dev python-yaml python-jinja2 python-httplib2 python-keyczar python-paramiko python-setuptools python-pkg-resources git python-pip && \
+    apt-get install -y libssl-dev libffi-dev python-dev python-yaml python-jinja2 python-httplib2 python-keyczar python-paramiko python-setuptools python-pkg-resources git python-pip python-sphinx && \
     apt-get clean autoclean && \
     apt-get autoremove -y && \
     rm -rf /var/lib/{apt,dpkg,cache,log}/
@@ -10,6 +10,7 @@ RUN apt-get -y update && \
 ADD . /opt/src
 
 RUN cd /opt/src && \
+    pip install setuptools --upgrade && \
     python setup.py install && \
     rm -rf /opt/src && \
     cd / && \
@@ -17,11 +18,12 @@ RUN cd /opt/src && \
     mkdir /etc/ansible/ && \
     echo '[local]\nlocalhost\n' > /etc/ansible/hosts && \
     mkdir /opt/ansible/ && \
-    git clone --branch stable-2.5 --depth 1 https://github.com/ansible/ansible.git /opt/ansible/ansible && \
-    cd /opt/ansible/ansible && \
-    git submodule update --init --recursive && \
+    git clone --branch stable-2.5 --depth 1 https://github.com/ansible/ansible.git /opt/ansible/ansible
+
+RUN cd /opt/ansible/ansible && \
     make && make install && \
     mkdir -p /work
+
 
 VOLUME ["/work"]
 
