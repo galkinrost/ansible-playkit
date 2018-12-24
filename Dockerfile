@@ -18,7 +18,7 @@ RUN cd /opt/src && \
     mkdir /etc/ansible/ && \
     echo '[local]\nlocalhost\n' > /etc/ansible/hosts && \
     mkdir /opt/ansible/ && \
-    git clone --branch stable-2.5 --depth 1 https://github.com/ansible/ansible.git /opt/ansible/ansible
+    git clone --branch stable-2.7 --depth 1 https://github.com/ansible/ansible.git /opt/ansible/ansible
 
 RUN cd /opt/ansible/ansible && \
     make && make install && \
