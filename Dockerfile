@@ -10,7 +10,7 @@ RUN apt-get -y update && \
 ADD . /opt/src
 
 RUN cd /opt/src && \
-    pip install packaging setuptools --upgrade && \
+    pip install packaging setuptools boto3 --upgrade && \
     python setup.py install && \
     rm -rf /opt/src && \
     cd / && \
