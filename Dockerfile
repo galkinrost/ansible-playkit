@@ -1,5 +1,7 @@
-FROM ubuntu:14.04
+FROM ubuntu:18.04
 MAINTAINER Rostislav Galkin <galkinrost@gmail.com>
+
+ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get -y update && \
     apt-get install -y libssl-dev libffi-dev python-dev python-yaml python-jinja2 python-httplib2 python-keyczar python-paramiko python-setuptools python-pkg-resources git python-pip python-sphinx && \
@@ -14,7 +16,6 @@ RUN cd /opt/src && \
     python setup.py install && \
     rm -rf /opt/src && \
     cd / && \
-    pip uninstall -y ansible && \
     mkdir /etc/ansible/ && \
     echo '[local]\nlocalhost\n' > /etc/ansible/hosts && \
     mkdir /opt/ansible/ && \

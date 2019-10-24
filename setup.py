@@ -18,8 +18,7 @@ setup(name='ansible-playkit',
       install_requires=[
           'cryptography',
           'setuptools>=11.3',
-          'keyring',
-          'ansible>=2'
+          'keyring'
       ],
       package_dir={ '': 'lib' },
       packages=find_packages('lib'),
